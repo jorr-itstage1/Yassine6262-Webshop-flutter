@@ -95,23 +95,23 @@ class _LoginPageState extends State<LoginPage> {
               controller: _passwordController,
               decoration: InputDecoration(
                 labelText: 'Password',
-                errorText: _errorMessage != null ? _errorMessage : null,
+                errorText: _errorMessage,
               ),
               obscureText: true,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _login,
-              child: Text('Login'),
+              child: const Text('Login'),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             TextButton(
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (context) => RegistrationPage()),
                 );
               },
-              child: Text('Don\'t have an account? Register here!'),
+              child: const Text('Don\'t have an account? Register here!'),
             ),
           ],
         ),
@@ -171,7 +171,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextField(
               controller: _usernameController,
