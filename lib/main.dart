@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
-import 'database_helper.dart'; // Zorg ervoor dat deze import aanwezig is
+import 'database_helper.dart'; 
+import 'home_page.dart';
+import 'admin_login_page.dart'; // Importeer de AdminLoginPage
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -13,12 +17,14 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: LoginPage(),
+      home: const LoginPage(),
     );
   }
 }
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -44,7 +50,6 @@ class _LoginPageState extends State<LoginPage> {
         _errorMessage = 'Password does not match';
       });
     } else {
-      // Als het inloggen succesvol is, toon dan de pop-up melding
       _showSuccessDialog();
     }
   }
@@ -54,16 +59,16 @@ class _LoginPageState extends State<LoginPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Login Successful'),
-          content: Text('You have logged in successfully!'),
+          title: const Text('Login Successful'),
+          content: const Text('You have logged in successfully!'),
           actions: [
             TextButton(
-              child: Text('Ok'),
+              child: const Text('Ok'),
               onPressed: () {
-                Navigator.of(context).pop(); // Sluit de dialoog
+                Navigator.of(context).pop();
                 Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                ); // Navigeer naar de Home Page
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
               },
             ),
           ],
@@ -71,13 +76,12 @@ class _LoginPageState extends State<LoginPage> {
       },
     );
   }
-  
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login'),
+        title: const Text('Login'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -88,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
               controller: _usernameController,
               decoration: InputDecoration(
                 labelText: 'Username',
-                errorText: _errorMessage != null ? _errorMessage : null,
+                errorText: _errorMessage,
               ),
             ),
             TextField(
@@ -108,10 +112,19 @@ class _LoginPageState extends State<LoginPage> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => RegistrationPage()),
+                  MaterialPageRoute(builder: (context) => const RegistrationPage()),
                 );
               },
               child: const Text('Don\'t have an account? Register here!'),
+            ),
+            const SizedBox(height: 20),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const AdminLoginPage()), // Navigeren naar de AdminLoginPage
+                );
+              },
+              child: const Text('Admin Login'),
             ),
           ],
         ),
@@ -119,85 +132,112 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
+
 //einde login
+
+
 class RegistrationPage extends StatefulWidget {
+  const RegistrationPage({super.key});
+
   @override
   _RegistrationPageState createState() => _RegistrationPageState();
 }
 
 class _RegistrationPageState extends State<RegistrationPage> {
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  String? _errorMessage;
+  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  void _register() async {
-    String username = _usernameController.text;
-    String email = _emailController.text;
-    String password = _passwordController.text;
+  Future<void> _register() async {
+    final String username = _usernameController.text;
+    final String email = _emailController.text;
+    final String password = _passwordController.text;
 
-    if (username.isEmpty || email.isEmpty || password.isEmpty) {
-      setState(() {
-        _errorMessage = 'Please fill in all fields';
-      });
+    // Controleer of de gebruiker al bestaat
+    List<Map<String, dynamic>> existingUser = await _dbHelper.getUser(username);
+    if (existingUser.isNotEmpty) {
+      // Geef een foutmelding als de gebruiker al bestaat
+      _showErrorDialog('Deze gebruikersnaam is al in gebruik.');
       return;
     }
 
-    DatabaseHelper dbHelper = DatabaseHelper(); // Dit moet ook werken nu
-    
-    // Probeer de gebruiker toe te voegen
-    try {
-      await dbHelper.insertUser({
-        'username': username,
-        'email': email,
-        'password': password,
-      });
-      
-      // Na succesvolle registratie, ga terug naar de loginpagina
-      Navigator.of(context).pop();
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Username already exists';
-      });
-    }
+    // Maak een nieuwe gebruiker aan
+    await _dbHelper.insertUser({
+      'username': username,
+      'email': email,
+      'password': password,
+    });
+
+    // Toon een succesmelding of ga naar een andere pagina
+    _showSuccessDialog('Registratie succesvol!');
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Fout'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Ok'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Succes'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Sluit het registratievenster of ga naar inlogpagina
+                Navigator.of(context).pop();
+              },
+              child: const Text('Ok'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Register'),
-      ),
+      appBar: AppBar(title: const Text('Registreren')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: _usernameController,
-              decoration: InputDecoration(
-                labelText: 'Username',
-                errorText: _errorMessage != null ? _errorMessage : null,
-              ),
+              decoration: const InputDecoration(labelText: 'Gebruikersnaam'),
             ),
             TextField(
               controller: _emailController,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                errorText: _errorMessage != null ? _errorMessage : null,
-              ),
+              decoration: const InputDecoration(labelText: 'Email'),
             ),
             TextField(
               controller: _passwordController,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                errorText: _errorMessage != null ? _errorMessage : null,
-              ),
               obscureText: true,
+              decoration: const InputDecoration(labelText: 'Wachtwoord'),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _register,
-              child: Text('Register'),
+              child: const Text('Registreren'),
             ),
           ],
         ),
@@ -206,14 +246,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 }
 
+
 class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Home Page'),
+        title: const Text('Home Page'),
       ),
-      body: Center(
+      body: const Center(
         child: Text(
           'Welcome to the Home Page!',
           style: TextStyle(fontSize: 24),
@@ -221,6 +264,94 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
+}// einde registreren
+
+class AdminLoginPage extends StatefulWidget {
+  const AdminLoginPage({Key? key}) : super(key: key);
+
+  @override
+  _AdminLoginPageState createState() => _AdminLoginPageState();
 }
 
+class _AdminLoginPageState extends State<AdminLoginPage> {
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String? _errorMessage;
 
+  void _adminLogin() {
+    String username = _usernameController.text;
+    String password = _passwordController.text;
+
+    // Simuleer een admin-login controle
+    if (username == 'admin' && password == 'admin123') {
+      // Navigeren naar de admin homepagina
+      _showSuccessDialog();
+    } else {
+      setState(() {
+        _errorMessage = 'Onjuiste gebruikersnaam of wachtwoord';
+      });
+    }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Admin Login Successful'),
+          content: const Text('You have logged in as an admin!'),
+          actions: [
+            TextButton(
+              child: const Text('Ok'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Sluit de dialoog
+                // Hier kun je navigeren naar de admin homepagina
+                // Bijvoorbeeld:
+                // Navigator.of(context).pushReplacement(
+                //   MaterialPageRoute(builder: (context) => const AdminHomePage()),
+                // );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Admin Login'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: _usernameController,
+              decoration: InputDecoration(
+                labelText: 'Username',
+                errorText: _errorMessage,
+              ),
+            ),
+            TextField(
+              controller: _passwordController,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                errorText: _errorMessage,
+              ),
+              obscureText: true,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _adminLogin,
+              child: const Text('Login as Admin'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

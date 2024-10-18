@@ -46,4 +46,7 @@ class DatabaseHelper {
       whereArgs: [username],
     );
   }
+
+  getAdmin(String username, String password) {}
 }
+
